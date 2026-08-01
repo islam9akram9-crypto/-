@@ -1,0 +1,136 @@
+{
+  "meta": {
+    "title": "Nabd Media | Digital Marketing Agency",
+    "description": "Nabd Media — Full-service digital marketing agency. Design, development, ads, and content management."
+  },
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "services": "Services",
+    "portfolio": "Portfolio",
+    "packages": "Packages",
+    "blog": "Blog",
+    "careers": "Careers",
+    "contact": "Contact",
+    "portal": "Client Portal",
+    "admin": "Admin"
+  },
+  "hero": {
+    "badge": "Full-Service Digital Marketing Agency",
+    "title": "The Pulse of Digital Creativity",
+    "subtitle": "We transform your ideas into impactful digital presence. Design, development, marketing, and content — everything your digital agency needs.",
+    "cta": "Start Your Project",
+    "secondary": "Explore the Platform"
+  },
+  "sections": {
+    "servicesTitle": "Our Services",
+    "servicesSubtitle": "Integrated pillars covering every digital need for your brand growth",
+    "platformTitle": "Nabd Operating Platform",
+    "platformSubtitle": "One system that manages clients, projects, and invoices — from first message to growth",
+    "aiTitle": "In-Platform AI",
+    "aiSubtitle": "Smart assistants that reduce your team's daily workload",
+    "audienceTitle": "Who We Make a Difference For?",
+    "packagesTitle": "Our Packages",
+    "roadmapTitle": "Roadmap",
+    "roadmapSubtitle": "Built gradually: working agency, internal platform, then a product sold to others.",
+    "ctaTitle": "Ready to Start Your Digital Journey?",
+    "ctaSubtitle": "Book a free consultation, and let's craft your brand's growth plan together."
+  },
+  "services": {
+    "title": "Our Services",
+    "subtitle": "Integrated digital solutions for your brand growth",
+    "viewAll": "View All Services",
+    "from": "Starting from",
+    "requestQuote": "Request Quote"
+  },
+  "about": {
+    "title": "About Us",
+    "subtitle": "Your partner in digital success",
+    "story": "Our Story",
+    "vision": "Vision",
+    "mission": "Mission",
+    "values": "Values",
+    "team": "Our Team"
+  },
+  "portfolio": {
+    "title": "Our Work",
+    "subtitle": "Projects we're proud of",
+    "viewProject": "View Project",
+    "allCategories": "All Categories"
+  },
+  "packages": {
+    "title": "Packages",
+    "subtitle": "Choose the plan that fits your needs",
+    "popular": "Most Popular",
+    "monthly": "/month",
+    "getStarted": "Get Started",
+    "compare": "Compare Plans"
+  },
+  "testimonials": {
+    "title": "Testimonials",
+    "subtitle": "What our clients say about us"
+  },
+  "stats": {
+    "projects": "Projects Done",
+    "clients": "Happy Clients",
+    "years": "Years Experience",
+    "team": "Team Members"
+  },
+  "faq": {
+    "title": "FAQ",
+    "subtitle": "Answers to common questions"
+  },
+  "cta": {
+    "title": "Ready to Start Your Project?",
+    "subtitle": "Contact us today for a free consultation",
+    "button": "Contact Us"
+  },
+  "contact": {
+    "title": "Contact Us",
+    "subtitle": "We're here to help",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "subject": "Subject",
+    "message": "Message",
+    "send": "Send",
+    "success": "Your message has been sent successfully!",
+    "error": "An error occurred, please try again"
+  },
+  "quote": {
+    "title": "Request a Quote",
+    "company": "Company Name",
+    "serviceType": "Service Type",
+    "budget": "Expected Budget",
+    "submit": "Submit Request"
+  },
+  "careers": {
+    "title": "Join Our Team",
+    "subtitle": "Open positions",
+    "apply": "Apply Now",
+    "position": "Position",
+    "coverLetter": "Cover Letter",
+    "resume": "Resume URL"
+  },
+  "blog": {
+    "title": "Blog",
+    "subtitle": "Latest articles and news",
+    "search": "Search blog...",
+    "readMore": "Read More",
+    "categories": "Categories",
+    "noResults": "No results found",
+    "relatedPosts": "Related Posts"
+  },
+  "footer": {
+    "rights": "All rights reserved",
+    "quickLinks": "Quick Links",
+    "followUs": "Follow Us"
+  },
+  "common": {
+    "loading": "Loading...",
+    "back": "Back",
+    "learnMore": "Learn More",
+    "sar": "SAR",
+    "monthly": "/month"
+  }
+}

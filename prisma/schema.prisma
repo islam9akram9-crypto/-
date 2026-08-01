@@ -1,0 +1,522 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Multi-Tenant (Phase 4) ───────────────────────────────────────────────
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  logo      String?
+  primaryColor String? @default("#6366f1")
+  domain    String?
+  settings  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users              User[]
+  services           Service[]
+  packages           Package[]
+  portfolioItems     PortfolioItem[]
+  blogPosts          BlogPost[]
+  blogCategories     BlogCategory[]
+  contactSubmissions ContactSubmission[]
+  quoteRequests      QuoteRequest[]
+  jobApplications    JobApplication[]
+  leads              Lead[]
+  clients            Client[]
+  projects           Project[]
+  invoices           Invoice[]
+  subscriptions      Subscription[]
+  supportTickets     SupportTicket[]
+}
+
+// ─── Auth & Users ───────────────────────────────────────────────────────────
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  STAFF
+  CLIENT
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  name           String?
+  passwordHash   String?
+  image          String?
+  role           Role     @default(STAFF)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  clientId       String?
+  client         Client?  @relation(fields: [clientId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  notes          Note[]
+  meetings       Meeting[]
+  assignedTasks  Task[]   @relation("AssignedTasks")
+  timeEntries    TimeEntry[]
+  accounts       Account[]
+  sessions       Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Marketing Content (Phase 1) ───────────────────────────────────────────
+
+model Service {
+  id             String   @id @default(cuid())
+  slug           String
+  titleAr        String
+  titleEn        String
+  descriptionAr  String   @db.Text
+  descriptionEn  String   @db.Text
+  contentAr      String?  @db.Text
+  contentEn      String?  @db.Text
+  icon           String?
+  priceFrom      Float?
+  featured       Boolean  @default(false)
+  order          Int      @default(0)
+  published      Boolean  @default(true)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([organizationId, slug])
+}
+
+model Package {
+  id             String   @id @default(cuid())
+  slug           String
+  nameAr         String
+  nameEn         String
+  descriptionAr  String   @db.Text
+  descriptionEn  String   @db.Text
+  price          Float
+  currency       String   @default("SAR")
+  featuresAr     String[]
+  featuresEn     String[]
+  popular        Boolean  @default(false)
+  order          Int      @default(0)
+  published      Boolean  @default(true)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([organizationId, slug])
+}
+
+model PortfolioItem {
+  id             String   @id @default(cuid())
+  slug           String
+  titleAr        String
+  titleEn        String
+  descriptionAr  String   @db.Text
+  descriptionEn  String   @db.Text
+  category       String
+  imageUrl       String?
+  clientName     String?
+  resultsAr      String?  @db.Text
+  resultsEn      String?  @db.Text
+  featured       Boolean  @default(false)
+  published      Boolean  @default(true)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([organizationId, slug])
+}
+
+model BlogCategory {
+  id             String     @id @default(cuid())
+  slug           String
+  nameAr         String
+  nameEn         String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  posts          BlogPost[]
+
+  @@unique([organizationId, slug])
+}
+
+model BlogPost {
+  id             String       @id @default(cuid())
+  slug           String
+  titleAr        String
+  titleEn        String
+  excerptAr      String       @db.Text
+  excerptEn      String       @db.Text
+  contentAr      String       @db.Text
+  contentEn      String       @db.Text
+  coverImage     String?
+  published      Boolean      @default(false)
+  publishedAt    DateTime?
+  categoryId     String?
+  category       BlogCategory? @relation(fields: [categoryId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, slug])
+}
+
+// ─── Forms (Phase 1) ────────────────────────────────────────────────────────
+
+model ContactSubmission {
+  id             String   @id @default(cuid())
+  name           String
+  email          String
+  phone          String?
+  subject        String?
+  message        String   @db.Text
+  status         String   @default("new")
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+}
+
+model QuoteRequest {
+  id             String   @id @default(cuid())
+  name           String
+  email          String
+  phone          String?
+  company        String?
+  serviceType    String?
+  budget         String?
+  message        String?  @db.Text
+  status         String   @default("new")
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+}
+
+model JobApplication {
+  id             String   @id @default(cuid())
+  name           String
+  email          String
+  phone          String?
+  position       String
+  resumeUrl      String?
+  coverLetter    String?  @db.Text
+  status         String   @default("new")
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+}
+
+// ─── CRM (Phase 3) ──────────────────────────────────────────────────────────
+
+model PipelineStage {
+  id    String @id @default(cuid())
+  name  String
+  order Int    @default(0)
+  color String @default("#6366f1")
+  leads Lead[]
+}
+
+model Lead {
+  id             String         @id @default(cuid())
+  name           String
+  email          String
+  phone          String?
+  company        String?
+  source         String?
+  value          Float?
+  notes          String?        @db.Text
+  stageId        String?
+  stage          PipelineStage? @relation(fields: [stageId], references: [id])
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  clientId       String?        @unique
+  client         Client?        @relation(fields: [clientId], references: [id])
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model Client {
+  id             String   @id @default(cuid())
+  name           String
+  email          String
+  phone          String?
+  company        String?
+  address        String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  lead           Lead?
+  projects       Project[]
+  invoices       Invoice[]
+  users          User[]
+  meetings       Meeting[]
+  supportTickets SupportTicket[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  entityType String
+  entityId  String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Meeting {
+  id        String   @id @default(cuid())
+  title     String
+  date      DateTime
+  duration  Int      @default(60)
+  notes     String?  @db.Text
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+// ─── Projects (Phase 3) ─────────────────────────────────────────────────────
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  REVIEW
+  COMPLETED
+  ON_HOLD
+}
+
+model Project {
+  id             String        @id @default(cuid())
+  name           String
+  description    String?       @db.Text
+  status         ProjectStatus @default(PLANNING)
+  progress       Int           @default(0)
+  startDate      DateTime?
+  dueDate        DateTime?
+  clientId       String
+  client         Client        @relation(fields: [clientId], references: [id])
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  tasks          Task[]
+  files          ProjectFile[]
+  timeEntries    TimeEntry[]
+  invoices       Invoice[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  REVIEW
+  DONE
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  description String?    @db.Text
+  status      TaskStatus @default(TODO)
+  order       Int        @default(0)
+  dueDate     DateTime?
+  projectId   String
+  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assigneeId  String?
+  assignee    User?      @relation("AssignedTasks", fields: [assigneeId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model ProjectFile {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  size      Int?
+  mimeType  String?
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model TimeEntry {
+  id          String   @id @default(cuid())
+  description String?
+  hours       Float
+  date        DateTime @default(now())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+// ─── Invoicing (Phase 3) ────────────────────────────────────────────────────
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model Invoice {
+  id             String        @id @default(cuid())
+  number         String
+  status         InvoiceStatus @default(DRAFT)
+  issueDate      DateTime      @default(now())
+  dueDate        DateTime
+  subtotal       Float
+  tax            Float         @default(0)
+  total          Float
+  currency       String        @default("SAR")
+  notes          String?       @db.Text
+  clientId       String
+  client         Client        @relation(fields: [clientId], references: [id])
+  projectId      String?
+  project        Project?      @relation(fields: [projectId], references: [id])
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  items          InvoiceItem[]
+  payments       Payment[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([organizationId, number])
+}
+
+model InvoiceItem {
+  id          String  @id @default(cuid())
+  description String
+  quantity    Float   @default(1)
+  unitPrice   Float
+  total       Float
+  invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+enum PaymentMethod {
+  STRIPE
+  MOYASAR
+  BANK_TRANSFER
+  CASH
+  MANUAL
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  amount        Float
+  currency      String        @default("SAR")
+  method        PaymentMethod @default(BANK_TRANSFER)
+  status        PaymentStatus @default(PENDING)
+  transactionId String?
+  receiptUrl    String?
+  invoiceId     String
+  invoice       Invoice       @relation(fields: [invoiceId], references: [id])
+  createdAt     DateTime      @default(now())
+}
+
+model Subscription {
+  id             String   @id @default(cuid())
+  planName       String
+  amount         Float
+  currency       String   @default("SAR")
+  interval       String   @default("monthly")
+  status         String   @default("active")
+  clientEmail    String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// ─── Client Portal (Phase 4) ───────────────────────────────────────────────
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+model SupportTicket {
+  id             String       @id @default(cuid())
+  subject        String
+  message        String       @db.Text
+  status         TicketStatus @default(OPEN)
+  clientId       String
+  client         Client       @relation(fields: [clientId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model SiteSettings {
+  id             String @id @default(cuid())
+  organizationId String @unique
+  companyNameAr  String @default("نبض ميديا")
+  companyNameEn  String @default("Nabd Media")
+  taglineAr      String @default("نبض الإبداع الرقمي")
+  taglineEn      String @default("The Pulse of Digital Creativity")
+  email          String @default("hello@nabdmedia.com")
+  phone          String @default("+966 50 000 0000")
+  addressAr      String @default("الرياض، المملكة العربية السعودية")
+  addressEn      String @default("Riyadh, Saudi Arabia")
+  socialLinks    Json?
+  seoTitleAr     String?
+  seoTitleEn     String?
+  seoDescAr      String?
+  seoDescEn      String?
+}
