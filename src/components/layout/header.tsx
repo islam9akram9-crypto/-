@@ -32,7 +32,7 @@ export function Header() {
         <Link href="/" className="flex items-center gap-2">
           <Image src="/nabd-icon.png" alt="Nabd Media" width={40} height={40} priority className="rounded-lg object-cover shadow-sm" />
           <span className="font-bold text-lg text-slate-900">
-            {locale === "ar" ? "ظ†ط¨ط¶ ظ…ظٹط¯ظٹط§" : "Nabd Media"}
+            {locale === "ar" ? "" : "Nabd Media"}
           </span>
         </Link>
 
