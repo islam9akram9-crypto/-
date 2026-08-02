@@ -67,7 +67,7 @@ export function Footer() {
         </div>
 
         <div className="mt-8 border-t border-slate-800 pt-8 text-center text-sm">
-          آ© {year} {locale === "ar" ? "ظ†ط¨ط¶ ظ…ظٹط¯ظٹط§" : "Nabd Media"}. {t("rights")}.
+          آ© {year} {locale === "ar" ? " نبض ميديا" : "Nabd Media"}. {t("rights")}.
         </div>
       </div>
     </footer>

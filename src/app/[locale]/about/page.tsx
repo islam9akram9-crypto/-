@@ -16,8 +16,8 @@ export default async function AboutPage() {
           <h1 className="mt-3 text-4xl font-bold md:text-5xl">{isArabic ? "نبض ميديا" : "Nabd Media"}</h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-slate-300">
             {isArabic
-              ? "وكالة تسويق رقمي سعودية تجمع بين الإبداع والتقنية لنقدّم حلولاً متكاملة تنقل علامتك إلى آفاق جديدة."
-              : "A Saudi digital marketing agency combining creativity and technology to deliver integrated solutions that take your brand to new heights."}
+              ? "وكالة تسويق رقمي فلسطينية تجمع بين الإبداع والتقنية لنقدّم حلولاً متكاملة تنقل علامتك إلى آفاق جديدة."
+              : "A Palestine digital marketing agency combining creativity and technology to deliver integrated solutions that take your brand to new heights."}
           </p>
         </div>
       </section>
