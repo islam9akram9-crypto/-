@@ -1,21 +1,22 @@
+import NextAuth from "next-auth";
 import createMiddleware from "next-intl/middleware";
-import { getToken } from "next-auth/jwt";
-import { type NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import authConfig from "./lib/auth.config";
 import { routing } from "./lib/i18n/routing";
 
+const { auth } = NextAuth(authConfig);
 const intlMiddleware = createMiddleware(routing);
 
-export default async function middleware(req: NextRequest) {
+export default auth((req) => {
   const { pathname } = req.nextUrl;
+  const session = req.auth;
 
   if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
-    const token = await getToken({ req, secret: process.env.AUTH_SECRET });
-
-    if (!token) {
+    if (!session) {
       return NextResponse.redirect(new URL("/admin/login", req.url));
     }
 
-    if (token.role === "CLIENT") {
+    if (session.user?.role === "CLIENT") {
       return NextResponse.redirect(new URL("/portal", req.url));
     }
 
@@ -23,9 +24,7 @@ export default async function middleware(req: NextRequest) {
   }
 
   if (pathname.startsWith("/portal") && !pathname.startsWith("/portal/login")) {
-    const token = await getToken({ req, secret: process.env.AUTH_SECRET });
-
-    if (!token) {
+    if (!session) {
       return NextResponse.redirect(new URL("/portal/login", req.url));
     }
 
@@ -37,7 +36,7 @@ export default async function middleware(req: NextRequest) {
   }
 
   return intlMiddleware(req);
-}
+});
 
 export const config = {
   matcher: ["/((?!_next|.*\\..*).*)"],

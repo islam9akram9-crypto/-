@@ -3,6 +3,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
 
+export const dynamic = "force-dynamic";
+
 export default function PortalLoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-50 p-6">

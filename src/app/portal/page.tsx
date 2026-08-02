@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Calendar, FileUp, MessageCircle, ReceiptText } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export default function ClientPortalPage() {
   return (
     <main className="min-h-screen bg-slate-50 p-6" dir="rtl">

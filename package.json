@@ -4,8 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/build-next.cjs",
-    "build:native": "next build",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
@@ -36,8 +35,6 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@next/swc-wasm-nodejs": "^16.2.12",
-    "@next/swc-wasm-web": "^16.2.12",
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
