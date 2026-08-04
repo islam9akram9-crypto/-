@@ -1,6 +1,6 @@
 import { useTranslations } from "next-intl";
 import { Link } from "@/lib/i18n/navigation";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
 
 export function HeroSection() {

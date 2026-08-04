@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import { Link } from "@/lib/i18n/navigation";
 import { notFound } from "next/navigation";
 import { CheckCircle2, ArrowRight, Megaphone, Palette, Code, Search, PenLine, Camera, Globe, Target, BarChart3, ShieldCheck } from "lucide-react";

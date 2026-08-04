@@ -7,19 +7,35 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─── Multi-Tenant (Phase 4) ───────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// GLOBAL DATABASE STANDARDS (per Master Prompt v1.0)
+// • Every important table: id, createdAt, updatedAt, createdBy, updatedBy,
+//   organizationId, optional deletedAt/deletedBy
+// • Money: ALWAYS Decimal — never Float
+// • Status: ALWAYS Enums — never free text
+// • Soft delete for important business data (deletedAt/deletedBy)
+// • Every business entity belongs to exactly one organization
+// • Indexes on: organizationId, createdAt, updatedAt, status, email, slug,
+//   userId, clientId, projectId, invoiceId
+// • Composite indexes: (organizationId + status), (organizationId + createdAt),
+//   (organizationId + slug), (organizationId + email)
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ─── Multi-Tenant ─────────────────────────────────────────────────────────────
 
 model Organization {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  logo      String?
-  primaryColor String? @default("#6366f1")
-  domain    String?
-  settings  Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  logo          String?
+  primaryColor  String?  @default("#6366f1")
+  domain        String?
+  settings      Json?
 
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
   users              User[]
   services           Service[]
   packages           Package[]
@@ -30,14 +46,41 @@ model Organization {
   quoteRequests      QuoteRequest[]
   jobApplications    JobApplication[]
   leads              Lead[]
+  pipelineStages     PipelineStage[]
   clients            Client[]
   projects           Project[]
+  notes              Note[]
+  meetings           Meeting[]
+  tasks              Task[]
+  projectFiles       ProjectFile[]
+  timeEntries        TimeEntry[]
   invoices           Invoice[]
+  invoiceItems       InvoiceItem[]
+  payments           Payment[]
   subscriptions      Subscription[]
   supportTickets     SupportTicket[]
+  notifications      Notification[]
+  activities         Activity[]
+  auditLogs          AuditLog[]
+  mediaAssets        MediaAsset[]
+  tags               Tag[]
+  entityTags         EntityTag[]
+  comments           Comment[]
+  approvalRequests   ApprovalRequest[]
+  calendarEvents     CalendarEvent[]
+  calendarAttendees  CalendarAttendee[]
+  knowledgeCategories KnowledgeCategory[]
+  knowledgeArticles  KnowledgeArticle[]
+  workflows          Workflow[]
+  workflowSteps      WorkflowStep[]
+  workflowRuns       WorkflowRun[]
+  backgroundJobs     BackgroundJob[]
+  featureFlags       FeatureFlag[]
+
+  @@index([slug])
 }
 
-// ─── Auth & Users ───────────────────────────────────────────────────────────
+// ─── Auth & Users ─────────────────────────────────────────────────────────────
 
 enum Role {
   SUPER_ADMIN
@@ -60,12 +103,88 @@ model User {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  notes          Note[]
-  meetings       Meeting[]
-  assignedTasks  Task[]   @relation("AssignedTasks")
-  timeEntries    TimeEntry[]
-  accounts       Account[]
-  sessions       Session[]
+  // Relations
+  notes                       Note[]
+  meetings                    Meeting[]
+  assignedTasks               Task[]      @relation("AssignedTasks")
+  timeEntries                 TimeEntry[]
+  accounts                    Account[]
+  sessions                    Session[]
+  notifications               Notification[]
+  activities                  Activity[]
+  auditLogs                   AuditLog[]
+  mediaAssets                 MediaAsset[]
+  comments                    Comment[]
+  approvalRequestsRequested   ApprovalRequest[] @relation("ApprovalRequestedBy")
+  approvalRequestsReviewed    ApprovalRequest[] @relation("ApprovalReviewedBy")
+  calendarEventsCreated       CalendarEvent[]   @relation("CalendarCreatedBy")
+  calendarEventsUpdated       CalendarEvent[]   @relation("CalendarUpdatedBy")
+  calendarEventsDeleted       CalendarEvent[]   @relation("CalendarDeletedBy")
+  calendarAttendees           CalendarAttendee[]
+  knowledgeArticles           KnowledgeArticle[]
+  knowledgeArticlesUpdated    KnowledgeArticle[] @relation("KnowledgeArticleUpdatedBy")
+  knowledgeArticlesDeleted    KnowledgeArticle[] @relation("KnowledgeArticleDeletedBy")
+  servicesCreated             Service[]   @relation("ServiceCreatedBy")
+  servicesUpdated             Service[]   @relation("ServiceUpdatedBy")
+  servicesDeleted             Service[]   @relation("ServiceDeletedBy")
+  packagesCreated             Package[]   @relation("PackageCreatedBy")
+  packagesUpdated             Package[]   @relation("PackageUpdatedBy")
+  packagesDeleted             Package[]   @relation("PackageDeletedBy")
+  portfolioItemsCreated       PortfolioItem[] @relation("PortfolioItemCreatedBy")
+  portfolioItemsUpdated       PortfolioItem[] @relation("PortfolioItemUpdatedBy")
+  portfolioItemsDeleted       PortfolioItem[] @relation("PortfolioItemDeletedBy")
+  blogPostsCreated            BlogPost[]  @relation("BlogPostCreatedBy")
+  blogPostsUpdated            BlogPost[]  @relation("BlogPostUpdatedBy")
+  blogPostsDeleted            BlogPost[]  @relation("BlogPostDeletedBy")
+  contactSubmissionsCreated   ContactSubmission[] @relation("ContactSubmissionCreatedBy")
+  contactSubmissionsDeleted   ContactSubmission[] @relation("ContactSubmissionDeletedBy")
+  quoteRequestsCreated        QuoteRequest[] @relation("QuoteRequestCreatedBy")
+  quoteRequestsDeleted        QuoteRequest[] @relation("QuoteRequestDeletedBy")
+  jobApplicationsCreated      JobApplication[] @relation("JobApplicationCreatedBy")
+  jobApplicationsDeleted      JobApplication[] @relation("JobApplicationDeletedBy")
+  leadsCreated                Lead[]      @relation("LeadCreatedBy")
+  leadsUpdated                Lead[]      @relation("LeadUpdatedBy")
+  leadsDeleted                Lead[]      @relation("LeadDeletedBy")
+  clientsCreated              Client[]    @relation("ClientCreatedBy")
+  clientsUpdated              Client[]    @relation("ClientUpdatedBy")
+  clientsDeleted              Client[]    @relation("ClientDeletedBy")
+  projectsCreated             Project[]   @relation("ProjectCreatedBy")
+  projectsUpdated             Project[]   @relation("ProjectUpdatedBy")
+  projectsDeleted             Project[]   @relation("ProjectDeletedBy")
+  tasksCreated                Task[]      @relation("TaskCreatedBy")
+  tasksUpdated                Task[]      @relation("TaskUpdatedBy")
+  tasksDeleted                Task[]      @relation("TaskDeletedBy")
+  invoicesCreated             Invoice[]   @relation("InvoiceCreatedBy")
+  invoicesUpdated             Invoice[]   @relation("InvoiceUpdatedBy")
+  invoicesDeleted             Invoice[]   @relation("InvoiceDeletedBy")
+  paymentsCreated             Payment[]   @relation("PaymentCreatedBy")
+  paymentsDeleted             Payment[]   @relation("PaymentDeletedBy")
+  subscriptionsCreated        Subscription[] @relation("SubscriptionCreatedBy")
+  subscriptionsUpdated        Subscription[] @relation("SubscriptionUpdatedBy")
+  subscriptionsDeleted        Subscription[] @relation("SubscriptionDeletedBy")
+  supportTicketsCreated       SupportTicket[] @relation("SupportTicketCreatedBy")
+  supportTicketsUpdated       SupportTicket[] @relation("SupportTicketUpdatedBy")
+  supportTicketsDeleted       SupportTicket[] @relation("SupportTicketDeletedBy")
+  mediaAssetsUpdated          MediaAsset[] @relation("MediaAssetUpdatedBy")
+  mediaAssetsDeleted          MediaAsset[] @relation("MediaAssetDeletedBy")
+  tagsCreated                 Tag[]       @relation("TagCreatedBy")
+  tagsDeleted                 Tag[]       @relation("TagDeletedBy")
+  commentsDeleted             Comment[]   @relation("CommentDeletedBy")
+  approvalRequestsUpdated     ApprovalRequest[] @relation("ApprovalRequestUpdatedBy")
+  approvalRequestsDeleted     ApprovalRequest[] @relation("ApprovalRequestDeletedBy")
+  workflowsCreated            Workflow[]  @relation("WorkflowCreatedBy")
+  workflowsUpdated            Workflow[]  @relation("WorkflowUpdatedBy")
+  workflowsDeleted            Workflow[]  @relation("WorkflowDeletedBy")
+  meetingsDeleted             Meeting[]   @relation("MeetingDeletedBy")
+  notesDeleted                Note[]      @relation("NoteDeletedBy")
+  projectFilesUploaded        ProjectFile[] @relation("ProjectFileUploadedBy")
+  projectFilesDeleted         ProjectFile[] @relation("ProjectFileDeletedBy")
+  timeEntriesDeleted          TimeEntry[] @relation("TimeEntryDeletedBy")
+
+  @@index([email])
+  @@index([organizationId])
+  @@index([role])
+  @@index([organizationId, email])
 }
 
 model Account {
@@ -84,6 +203,7 @@ model Account {
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Session {
@@ -92,6 +212,9 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expires])
 }
 
 model VerificationToken {
@@ -100,9 +223,10 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+  @@index([expires])
 }
 
-// ─── Marketing Content (Phase 1) ───────────────────────────────────────────
+// ─── Marketing Content ────────────────────────────────────────────────────────
 
 model Service {
   id             String   @id @default(cuid())
@@ -114,16 +238,38 @@ model Service {
   contentAr      String?  @db.Text
   contentEn      String?  @db.Text
   icon           String?
-  priceFrom      Float?
+  priceFrom      Decimal? @db.Decimal(12, 2)
+  currency       String   @default("SAR")
   featured       Boolean  @default(false)
   order          Int      @default(0)
   published      Boolean  @default(true)
+  status         ContentStatus @default(PUBLISHED)
+
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdById    String?
+  createdBy      User?    @relation("ServiceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById    String?
+  updatedBy      User?    @relation("ServiceUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  deletedById    String?
+  deletedBy      User?    @relation("ServiceDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   @@unique([organizationId, slug])
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+  @@index([status])
+  @@index([createdById])
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }
 
 model Package {
@@ -133,19 +279,34 @@ model Package {
   nameEn         String
   descriptionAr  String   @db.Text
   descriptionEn  String   @db.Text
-  price          Float
+  price          Decimal  @db.Decimal(12, 2)
   currency       String   @default("SAR")
   featuresAr     String[]
   featuresEn     String[]
   popular        Boolean  @default(false)
   order          Int      @default(0)
   published      Boolean  @default(true)
+  status         ContentStatus @default(PUBLISHED)
+
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdById    String?
+  createdBy      User?    @relation("PackageCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById    String?
+  updatedBy      User?    @relation("PackageUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  deletedById    String?
+  deletedBy      User?    @relation("PackageDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   @@unique([organizationId, slug])
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+  @@index([status])
+  @@index([createdById])
 }
 
 model PortfolioItem {
@@ -162,12 +323,26 @@ model PortfolioItem {
   resultsEn      String?  @db.Text
   featured       Boolean  @default(false)
   published      Boolean  @default(true)
+  status         ContentStatus @default(PUBLISHED)
+
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdById    String?
+  createdBy      User?    @relation("PortfolioItemCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById    String?
+  updatedBy      User?    @relation("PortfolioItemUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  deletedById    String?
+  deletedBy      User?    @relation("PortfolioItemDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   @@unique([organizationId, slug])
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+  @@index([status])
 }
 
 model BlogCategory {
@@ -180,6 +355,7 @@ model BlogCategory {
   posts          BlogPost[]
 
   @@unique([organizationId, slug])
+  @@index([organizationId])
 }
 
 model BlogPost {
@@ -194,17 +370,42 @@ model BlogPost {
   coverImage     String?
   published      Boolean      @default(false)
   publishedAt    DateTime?
+  status         ContentStatus @default(DRAFT)
   categoryId     String?
-  category       BlogCategory? @relation(fields: [categoryId], references: [id])
+  category       BlogCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdById    String?
+  createdBy      User?    @relation("BlogPostCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById    String?
+  updatedBy      User?    @relation("BlogPostUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  deletedById    String?
+  deletedBy      User?    @relation("BlogPostDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?
+
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
   @@unique([organizationId, slug])
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+  @@index([status])
+  @@index([categoryId])
 }
 
-// ─── Forms (Phase 1) ────────────────────────────────────────────────────────
+// ─── Forms ────────────────────────────────────────────────────────────────────
+
+enum FormStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  WON
+  LOST
+  CLOSED
+}
 
 model ContactSubmission {
   id             String   @id @default(cuid())
@@ -213,10 +414,23 @@ model ContactSubmission {
   phone          String?
   subject        String?
   message        String   @db.Text
-  status         String   @default("new")
+  status         FormStatus @default(NEW)
+
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdById    String?
+  createdBy      User?    @relation("ContactSubmissionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  deletedById    String?
+  deletedBy      User?    @relation("ContactSubmissionDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?
+
   createdAt      DateTime @default(now())
+
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+  @@index([email])
+  @@index([status])
 }
 
 model QuoteRequest {
@@ -228,10 +442,23 @@ model QuoteRequest {
   serviceType    String?
   budget         String?
   message        String?  @db.Text
-  status         String   @default("new")
+  status         FormStatus @default(NEW)
+
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdById    String?
+  createdBy      User?    @relation("QuoteRequestCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  deletedById    String?
+  deletedBy      User?    @relation("QuoteRequestDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?
+
   createdAt      DateTime @default(now())
+
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+  @@index([email])
+  @@index([status])
 }
 
 model JobApplication {
@@ -242,20 +469,51 @@ model JobApplication {
   position       String
   resumeUrl      String?
   coverLetter    String?  @db.Text
-  status         String   @default("new")
+  status         FormStatus @default(NEW)
+
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdById    String?
+  createdBy      User?    @relation("JobApplicationCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  deletedById    String?
+  deletedBy      User?    @relation("JobApplicationDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?
+
   createdAt      DateTime @default(now())
+
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+  @@index([email])
+  @@index([status])
 }
 
-// ─── CRM (Phase 3) ──────────────────────────────────────────────────────────
+// ─── CRM ──────────────────────────────────────────────────────────────────────
 
 model PipelineStage {
-  id    String @id @default(cuid())
-  name  String
-  order Int    @default(0)
-  color String @default("#6366f1")
-  leads Lead[]
+  id             String   @id @default(cuid())
+  name           String
+  order          Int      @default(0)
+  color          String   @default("#6366f1")
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  leads          Lead[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([organizationId, name])
+  @@index([organizationId, order])
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  WON
+  LOST
 }
 
 model Lead {
@@ -265,16 +523,35 @@ model Lead {
   phone          String?
   company        String?
   source         String?
-  value          Float?
+  value          Decimal?       @db.Decimal(12, 2)
+  currency       String         @default("SAR")
   notes          String?        @db.Text
+  status         LeadStatus     @default(NEW)
   stageId        String?
-  stage          PipelineStage? @relation(fields: [stageId], references: [id])
+  stage          PipelineStage? @relation(fields: [stageId], references: [id], onDelete: SetNull)
+
   organizationId String
   organization   Organization   @relation(fields: [organizationId], references: [id])
   clientId       String?        @unique
-  client         Client?        @relation(fields: [clientId], references: [id])
+  client         Client?        @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  createdById    String?
+  createdBy      User?          @relation("LeadCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById    String?
+  updatedBy      User?          @relation("LeadUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  deletedById    String?
+  deletedBy      User?          @relation("LeadDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?
+
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+  @@index([organizationId, email])
+  @@index([email])
+  @@index([stageId])
+  @@index([createdById])
 }
 
 model Client {
@@ -284,26 +561,56 @@ model Client {
   phone          String?
   company        String?
   address        String?
+
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
   lead           Lead?
+
+  createdById    String?
+  createdBy      User?    @relation("ClientCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById    String?
+  updatedBy      User?    @relation("ClientUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  deletedById    String?
+  deletedBy      User?    @relation("ClientDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?
+
   projects       Project[]
   invoices       Invoice[]
   users          User[]
   meetings       Meeting[]
   supportTickets SupportTicket[]
+  calendarEvents CalendarEvent[]
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([organizationId, email])
+  @@index([organizationId, createdAt])
+  @@index([email])
+  @@index([createdById])
 }
 
 model Note {
-  id        String   @id @default(cuid())
-  content   String   @db.Text
-  entityType String
-  entityId  String
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id])
-  createdAt DateTime @default(now())
+  id           String   @id @default(cuid())
+  content      String   @db.Text
+  entityType   String
+  entityId     String
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  authorId     String
+  author       User     @relation(fields: [authorId], references: [id])
+
+  deletedById  String?
+  deletedBy    User?    @relation("NoteDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt    DateTime?
+
+  createdAt    DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([organizationId, createdAt])
+  @@index([authorId])
 }
 
 model Meeting {
@@ -312,14 +619,29 @@ model Meeting {
   date      DateTime
   duration  Int      @default(60)
   notes     String?  @db.Text
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
   clientId  String
-  client    Client   @relation(fields: [clientId], references: [id])
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   userId    String
   user      User     @relation(fields: [userId], references: [id])
+
+  deletedById  String?
+  deletedBy    User?    @relation("MeetingDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt    DateTime?
+
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, createdAt])
+  @@index([clientId])
+  @@index([userId])
+  @@index([date])
 }
 
-// ─── Projects (Phase 3) ─────────────────────────────────────────────────────
+// ─── Projects ─────────────────────────────────────────────────────────────────
 
 enum ProjectStatus {
   PLANNING
@@ -327,6 +649,7 @@ enum ProjectStatus {
   REVIEW
   COMPLETED
   ON_HOLD
+  CANCELLED
 }
 
 model Project {
@@ -339,14 +662,32 @@ model Project {
   dueDate        DateTime?
   clientId       String
   client         Client        @relation(fields: [clientId], references: [id])
+
   organizationId String
   organization   Organization  @relation(fields: [organizationId], references: [id])
+
+  createdById    String?
+  createdBy      User?         @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById    String?
+  updatedBy      User?         @relation("ProjectUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  deletedById    String?
+  deletedBy      User?         @relation("ProjectDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?
+
   tasks          Task[]
   files          ProjectFile[]
   timeEntries    TimeEntry[]
   invoices       Invoice[]
+  calendarEvents CalendarEvent[]
+
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+  @@index([clientId])
+  @@index([createdById])
+  @@index([dueDate])
 }
 
 enum TaskStatus {
@@ -354,6 +695,7 @@ enum TaskStatus {
   IN_PROGRESS
   REVIEW
   DONE
+  CANCELLED
 }
 
 model Task {
@@ -363,38 +705,86 @@ model Task {
   status      TaskStatus @default(TODO)
   order       Int        @default(0)
   dueDate     DateTime?
+
   projectId   String
   project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
   assigneeId  String?
-  assignee    User?      @relation("AssignedTasks", fields: [assigneeId], references: [id])
+  assignee    User?      @relation("AssignedTasks", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdById    String?
+  createdBy      User?    @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById    String?
+  updatedBy      User?    @relation("TaskUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  deletedById    String?
+  deletedBy      User?    @relation("TaskDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?
+
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+
+  @@index([organizationId, status])
+  @@index([projectId])
+  @@index([assigneeId])
+  @@index([organizationId, createdAt])
 }
 
 model ProjectFile {
-  id        String   @id @default(cuid())
-  name      String
-  url       String
-  size      Int?
-  mimeType  String?
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  name        String
+  url         String
+  size        Int?
+  mimeType    String?
+
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  uploadedById   String?
+  uploadedBy     User?    @relation("ProjectFileUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+  deletedById    String?
+  deletedBy      User?    @relation("ProjectFileDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?
+
+  createdAt   DateTime @default(now())
+
+  @@index([projectId])
+  @@index([organizationId, createdAt])
+  @@index([uploadedById])
 }
 
 model TimeEntry {
   id          String   @id @default(cuid())
   description String?
-  hours       Float
+  hours       Decimal  @db.Decimal(6, 2)
   date        DateTime @default(now())
+
   projectId   String
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   userId      String
   user        User     @relation(fields: [userId], references: [id])
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  deletedById    String?
+  deletedBy      User?    @relation("TimeEntryDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?
+
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([userId])
+  @@index([organizationId, createdAt])
+  @@index([date])
 }
 
-// ─── Invoicing (Phase 3) ────────────────────────────────────────────────────
+// ─── Invoicing ────────────────────────────────────────────────────────────────
 
 enum InvoiceStatus {
   DRAFT
@@ -410,33 +800,61 @@ model Invoice {
   status         InvoiceStatus @default(DRAFT)
   issueDate      DateTime      @default(now())
   dueDate        DateTime
-  subtotal       Float
-  tax            Float         @default(0)
-  total          Float
+  subtotal       Decimal       @db.Decimal(12, 2)
+  tax            Decimal       @db.Decimal(12, 2) @default(0)
+  total          Decimal       @db.Decimal(12, 2)
   currency       String        @default("SAR")
   notes          String?       @db.Text
+
   clientId       String
   client         Client        @relation(fields: [clientId], references: [id])
   projectId      String?
-  project        Project?      @relation(fields: [projectId], references: [id])
+  project        Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
   organizationId String
   organization   Organization  @relation(fields: [organizationId], references: [id])
+
+  createdById    String?
+  createdBy      User?         @relation("InvoiceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById    String?
+  updatedBy      User?         @relation("InvoiceUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  deletedById    String?
+  deletedBy      User?         @relation("InvoiceDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?
+
   items          InvoiceItem[]
   payments       Payment[]
+
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
   @@unique([organizationId, number])
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+  @@index([clientId])
+  @@index([projectId])
+  @@index([status])
+  @@index([dueDate])
 }
 
 model InvoiceItem {
   id          String  @id @default(cuid())
   description String
-  quantity    Float   @default(1)
-  unitPrice   Float
-  total       Float
+  quantity    Decimal @db.Decimal(12, 2) @default(1)
+  unitPrice   Decimal @db.Decimal(12, 2)
+  total       Decimal @db.Decimal(12, 2)
+  currency    String  @default("SAR")
+
   invoiceId   String
   invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdAt   DateTime @default(now())
+
+  @@index([invoiceId])
+  @@index([organizationId])
 }
 
 enum PaymentMethod {
@@ -456,32 +874,83 @@ enum PaymentStatus {
 
 model Payment {
   id            String        @id @default(cuid())
-  amount        Float
+  amount        Decimal       @db.Decimal(12, 2)
   currency      String        @default("SAR")
   method        PaymentMethod @default(BANK_TRANSFER)
   status        PaymentStatus @default(PENDING)
   transactionId String?
   receiptUrl    String?
+
   invoiceId     String
   invoice       Invoice       @relation(fields: [invoiceId], references: [id])
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdById   String?
+  createdBy     User?         @relation("PaymentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  deletedById   String?
+  deletedBy     User?         @relation("PaymentDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt     DateTime?
+
   createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([invoiceId])
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+  @@index([status])
+  @@index([transactionId])
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  PENDING
+}
+
+enum SubscriptionInterval {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  ONE_TIME
 }
 
 model Subscription {
-  id             String   @id @default(cuid())
+  id             String             @id @default(cuid())
   planName       String
-  amount         Float
-  currency       String   @default("SAR")
-  interval       String   @default("monthly")
-  status         String   @default("active")
+  amount         Decimal            @db.Decimal(12, 2)
+  currency       String             @default("SAR")
+  interval       SubscriptionInterval @default(MONTHLY)
+  status         SubscriptionStatus @default(ACTIVE)
   clientEmail    String
+  startsAt       DateTime           @default(now())
+  endsAt         DateTime?
+  canceledAt     DateTime?
+
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+
+  createdById    String?
+  createdBy      User?       @relation("SubscriptionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById    String?
+  updatedBy      User?       @relation("SubscriptionUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  deletedById    String?
+  deletedBy      User?       @relation("SubscriptionDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?
+
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+  @@index([clientEmail])
+  @@index([createdById])
 }
 
-// ─── Client Portal (Phase 4) ───────────────────────────────────────────────
+// ─── Client Portal ────────────────────────────────────────────────────────────
 
 enum TicketStatus {
   OPEN
@@ -495,12 +964,27 @@ model SupportTicket {
   subject        String
   message        String       @db.Text
   status         TicketStatus @default(OPEN)
+
   clientId       String
   client         Client       @relation(fields: [clientId], references: [id])
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdById    String?
+  createdBy      User?        @relation("SupportTicketCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById    String?
+  updatedBy      User?        @relation("SupportTicketUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  deletedById    String?
+  deletedBy      User?        @relation("SupportTicketDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?
+
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+  @@index([clientId])
+  @@index([createdById])
 }
 
 model SiteSettings {
@@ -519,4 +1003,486 @@ model SiteSettings {
   seoTitleEn     String?
   seoDescAr      String?
   seoDescEn      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId])
+}
+
+// ─── Notifications & Activity ────────────────────────────────────────────────
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+}
+
+model Notification {
+  id             String           @id @default(cuid())
+  type           NotificationType @default(INFO)
+  title          String
+  body           String?          @db.Text
+  read           Boolean          @default(false)
+  link           String?
+
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+
+  createdAt      DateTime         @default(now())
+
+  @@index([userId, read])
+  @@index([organizationId])
+  @@index([organizationId, createdAt])
+  @@index([read])
+}
+
+model Activity {
+  id             String   @id @default(cuid())
+  action         String
+  entityType     String
+  entityId       String?
+  metadata       Json?
+
+  userId         String?
+  user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([entityType, entityId])
+  @@index([userId])
+}
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  action         String
+  entityType     String
+  entityId       String?
+  before         Json?
+  after          Json?
+  ipAddress      String?
+  userAgent      String?
+
+  userId         String?
+  user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([action])
+}
+
+// ─── Media Library ────────────────────────────────────────────────────────────
+
+model MediaAsset {
+  id             String   @id @default(cuid())
+  name           String
+  url            String
+  mimeType       String
+  size           Int
+  width          Int?
+  height         Int?
+  altText        String?
+  folder         String   @default("general")
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  uploadedById   String?
+  uploadedBy     User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  updatedById    String?
+  updatedBy      User?    @relation("MediaAssetUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  deletedById    String?
+  deletedBy      User?    @relation("MediaAssetDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId, folder])
+  @@index([organizationId, createdAt])
+  @@index([uploadedById])
+  @@index([mimeType])
+}
+
+// ─── Tags & Comments ──────────────────────────────────────────────────────────
+
+model Tag {
+  id             String   @id @default(cuid())
+  name           String
+  color          String   @default("#6366f1")
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdById    String?
+  createdBy      User?    @relation("TagCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  deletedById    String?
+  deletedBy      User?    @relation("TagDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?
+
+  entityTags     EntityTag[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([organizationId, name])
+  @@index([organizationId, createdAt])
+}
+
+model EntityTag {
+  id        String @id @default(cuid())
+  entityType String
+  entityId  String
+
+  tagId     String
+  tag       Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([entityType, entityId, tagId])
+  @@index([entityType, entityId])
+  @@index([organizationId])
+  @@index([tagId])
+}
+
+model Comment {
+  id             String   @id @default(cuid())
+  content        String   @db.Text
+  entityType     String
+  entityId       String
+
+  authorId       String
+  author         User     @relation(fields: [authorId], references: [id])
+
+  parentId       String?
+  parent         Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies        Comment[] @relation("CommentReplies")
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  deletedById    String?
+  deletedBy      User?    @relation("CommentDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([entityType, entityId])
+  @@index([organizationId, createdAt])
+  @@index([authorId])
+}
+
+// ─── Approvals ────────────────────────────────────────────────────────────────
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+model ApprovalRequest {
+  id             String         @id @default(cuid())
+  title          String
+  description    String?        @db.Text
+  status         ApprovalStatus @default(PENDING)
+  entityType     String
+  entityId       String
+
+  requestedById  String
+  requestedBy    User           @relation("ApprovalRequestedBy", fields: [requestedById], references: [id])
+  reviewedById   String?
+  reviewedBy     User?          @relation("ApprovalReviewedBy", fields: [reviewedById], references: [id])
+  reviewNote     String?        @db.Text
+  reviewedAt     DateTime?
+
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+
+  updatedById    String?
+  updatedBy      User?          @relation("ApprovalRequestUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  deletedById    String?
+  deletedBy      User?          @relation("ApprovalRequestDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?
+
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+  @@index([entityType, entityId])
+  @@index([requestedById])
+  @@index([reviewedById])
+}
+
+// ─── Calendar ─────────────────────────────────────────────────────────────────
+
+enum CalendarEventType {
+  MEETING
+  CALL
+  DEADLINE
+  TASK
+  REMINDER
+}
+
+enum AttendeeStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  MAYBE
+}
+
+model CalendarEvent {
+  id             String            @id @default(cuid())
+  title          String
+  description    String?           @db.Text
+  type           CalendarEventType @default(MEETING)
+  startAt        DateTime
+  endAt          DateTime?
+  allDay         Boolean           @default(false)
+  location       String?
+
+  clientId       String?
+  client         Client?           @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  projectId      String?
+  project        Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  createdById    String
+  createdBy      User              @relation("CalendarCreatedBy", fields: [createdById], references: [id])
+  updatedById    String?
+  updatedBy      User?             @relation("CalendarUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  deletedById    String?
+  deletedBy      User?             @relation("CalendarDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?
+
+  attendees      CalendarAttendee[]
+
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id])
+
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([organizationId, startAt])
+  @@index([clientId])
+  @@index([projectId])
+  @@index([createdById])
+}
+
+model CalendarAttendee {
+  id        String        @id @default(cuid())
+  eventId   String
+  event     CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    AttendeeStatus @default(PENDING)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, userId])
+  @@index([userId])
+  @@index([organizationId])
+  @@index([status])
+}
+
+// ─── Knowledge Base ───────────────────────────────────────────────────────────
+
+model KnowledgeCategory {
+  id             String   @id @default(cuid())
+  name           String
+  slug           String
+  description    String?  @db.Text
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  articles       KnowledgeArticle[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([organizationId, slug])
+  @@index([organizationId, createdAt])
+}
+
+model KnowledgeArticle {
+  id             String             @id @default(cuid())
+  title          String
+  slug           String
+  content        String             @db.Text
+  published      Boolean            @default(false)
+  views          Int                @default(0)
+  status         ContentStatus      @default(DRAFT)
+  categoryId     String?
+  category       KnowledgeCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  authorId       String
+  author         User               @relation(fields: [authorId], references: [id])
+  updatedById    String?
+  updatedBy      User?              @relation("KnowledgeArticleUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  deletedById    String?
+  deletedBy      User?              @relation("KnowledgeArticleDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?
+
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@unique([organizationId, slug])
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+  @@index([categoryId])
+  @@index([authorId])
+}
+
+// ─── Workflow Engine ──────────────────────────────────────────────────────────
+
+model Workflow {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?  @db.Text
+  triggerType    String
+  triggerConfig  Json?
+  enabled        Boolean  @default(true)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdById    String?
+  createdBy      User?    @relation("WorkflowCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById    String?
+  updatedBy      User?    @relation("WorkflowUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  deletedById    String?
+  deletedBy      User?    @relation("WorkflowDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?
+
+  steps          WorkflowStep[]
+  runs           WorkflowRun[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId, enabled])
+  @@index([organizationId, createdAt])
+  @@index([createdById])
+}
+
+model WorkflowStep {
+  id          String   @id @default(cuid())
+  workflowId  String
+  workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  type        String
+  config      Json?
+  order       Int      @default(0)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([workflowId])
+  @@index([organizationId])
+}
+
+enum WorkflowRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model WorkflowRun {
+  id          String            @id @default(cuid())
+  workflowId  String
+  workflow    Workflow          @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  status      WorkflowRunStatus @default(PENDING)
+  input       Json?
+  output      Json?
+  error       String?           @db.Text
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  startedAt   DateTime          @default(now())
+  completedAt DateTime?
+  createdAt   DateTime          @default(now())
+
+  @@index([workflowId])
+  @@index([organizationId, status])
+  @@index([status, startedAt])
+}
+
+// ─── Background Jobs ──────────────────────────────────────────────────────────
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model BackgroundJob {
+  id             String    @id @default(cuid())
+  name           String
+  status         JobStatus @default(PENDING)
+  payload        Json?
+  result         Json?
+  error          String?   @db.Text
+  attempts       Int       @default(0)
+  maxAttempts    Int       @default(3)
+  runAt          DateTime  @default(now())
+  startedAt      DateTime?
+  completedAt    DateTime?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([status, runAt])
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+  @@index([name])
+}
+
+// ─── Feature Flags ────────────────────────────────────────────────────────────
+
+model FeatureFlag {
+  id             String   @id @default(cuid())
+  key            String
+  enabled        Boolean  @default(false)
+  description    String?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  updatedAt      DateTime @updatedAt
+  createdAt      DateTime @default(now())
+
+  @@unique([organizationId, key])
+  @@index([organizationId, enabled])
 }

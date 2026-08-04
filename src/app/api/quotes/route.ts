@@ -1,14 +1,20 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { quoteRequestSchema } from "@/validators/public-forms";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, phone, company, serviceType, budget, message } = body;
+    const parsed = quoteRequestSchema.safeParse(body);
 
-    if (!name || !email) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
     }
+
+    const { name, email, phone, company, serviceType, budget, message } = parsed.data;
 
     const org = await prisma.organization.findFirst();
     if (!org) {

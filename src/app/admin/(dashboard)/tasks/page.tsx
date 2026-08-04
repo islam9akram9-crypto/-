@@ -1,21 +1,43 @@
-import { Button } from "@/components/ui/button";
-import { Plus, Clock, Circle, CheckCircle2 } from "lucide-react";
+import { auth } from "@/lib/auth";
+import { taskRepository } from "@/repositories/task.repository";
+import { Button } from "@/shared/components/ui/button";
+import { Badge } from "@/shared/components/ui/badge";
+import { EmptyState } from "@/shared/components/ui/empty-state";
+import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
+import { Plus, Circle, CheckCircle2, Clock } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 
-const tasks = [
-  { id: "T-001", title: "مراجعة حملة متجر العطور", project: "حملة إعلانات متجر العطور", assignee: "سارة", due: "اليوم", status: "قيد التنفيذ", color: "bg-amber-400" },
-  { id: "T-002", title: "إرسال عرض سعر لعيادة طبية", project: "إعادة تصميم الهوية", assignee: "أحمد", due: "غداً", status: "معلق", color: "bg-slate-300" },
-  { id: "T-003", title: "اعتماد تصميمات مطعم جديد", project: "تطوير منصة الطلبات", assignee: "ريم", due: "2025-06-25", status: "مراجعة", color: "bg-indigo-400" },
-  { id: "T-004", title: "متابعة فاتورة شركة عقارية", project: "موقع عقاري تفاعلي", assignee: "خالد", due: "2025-06-28", status: "مكتمل", color: "bg-emerald-500" },
-];
+export const dynamic = "force-dynamic";
 
-const statusColors: Record<string, string> = {
-  "معلق": "bg-slate-100 text-slate-600",
-  "قيد التنفيذ": "bg-amber-50 text-amber-700",
-  "مراجعة": "bg-indigo-50 text-indigo-700",
-  "مكتمل": "bg-emerald-50 text-emerald-700",
+const STATUS_MAP: Record<string, { label: string; badge: "secondary" | "info" | "warning" | "success"; color: string }> = {
+  TODO: { label: "معلق", badge: "secondary", color: "bg-slate-400" },
+  IN_PROGRESS: { label: "قيد التنفيذ", badge: "info", color: "bg-sky-500" },
+  REVIEW: { label: "مراجعة", badge: "warning", color: "bg-amber-500" },
+  DONE: { label: "مكتمل", badge: "success", color: "bg-emerald-500" },
 };
 
-export default function AdminTasks() {
+export default async function AdminTasks() {
+  const session = await auth();
+
+  if (!session?.user?.organizationId) {
+    return <EmptyState title="غير مصرح" description="يجب تسجيل الدخول للوصول إلى هذه الصفحة." />;
+  }
+
+  const [tasks, counts] = await Promise.all([
+    taskRepository.list({
+      organizationId: session.user.organizationId,
+      pageSize: 20,
+    }),
+    taskRepository.countByStatus(session.user.organizationId),
+  ]);
+
+  const statCards = [
+    { label: "معلق", count: counts.todo, color: "bg-slate-400" },
+    { label: "قيد التنفيذ", count: counts.inProgress, color: "bg-sky-500" },
+    { label: "مراجعة", count: counts.review, color: "bg-amber-500" },
+    { label: "مكتمل", count: counts.done, color: "bg-emerald-500" },
+  ];
+
   return (
     <div className="mx-auto max-w-7xl">
       <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
@@ -29,14 +51,9 @@ export default function AdminTasks() {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        {[
-          ["معلق", 8, "bg-slate-300"],
-          ["قيد التنفيذ", 12, "bg-amber-400"],
-          ["مراجعة", 5, "bg-indigo-400"],
-          ["مكتمل", 24, "bg-emerald-500"],
-        ].map(([label, count, color]) => (
-          <div key={label as string} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+        {statCards.map(({ label, count, color }) => (
+          <div key={label} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-slate-600">{label}</span>
               <span className={`h-2.5 w-2.5 rounded-full ${color}`} />
@@ -46,34 +63,55 @@ export default function AdminTasks() {
         ))}
       </div>
 
-      <div className="mt-6 space-y-3">
-        {tasks.map((task) => (
-          <div key={task.id} className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-3">
-              {task.status === "مكتمل" ? (
-                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
-              ) : (
-                <Circle className="mt-0.5 h-5 w-5 shrink-0 text-slate-300" />
-              )}
-              <div>
-                <p className={`font-medium text-slate-900 ${task.status === "مكتمل" ? "line-through text-slate-400" : ""}`}>
-                  {task.title}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">{task.project} · {task.assignee}</p>
+      {tasks.items.length === 0 ? (
+        <div className="mt-6">
+          <EmptyState title="لا توجد مهام" description="أنشئ أول مهمة لبدء متابعة عمل الفريق." />
+        </div>
+      ) : (
+        <div className="mt-6 space-y-3">
+          {tasks.items.map((task) => {
+            const status = STATUS_MAP[task.status] ?? STATUS_MAP.TODO;
+            const isDone = task.status === "DONE";
+            return (
+              <div
+                key={task.id}
+                className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="flex items-start gap-3">
+                  {isDone ? (
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
+                  ) : (
+                    <Circle className="mt-0.5 h-5 w-5 shrink-0 text-slate-300" />
+                  )}
+                  <div>
+                    <p className={`font-medium text-slate-900 ${isDone ? "text-slate-400 line-through" : ""}`}>
+                      {task.title}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {task.project.name}
+                      {task.assignee ? ` · ${task.assignee.name ?? "غير معين"}` : " · غير معين"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 text-xs">
+                  <Badge variant={status.badge}>{status.label}</Badge>
+                  <span className="flex items-center gap-1 text-slate-500">
+                    <Clock className="h-3.5 w-3.5" />
+                    {task.dueDate ? formatDate(task.dueDate, "ar") : "بدون موعد"}
+                  </span>
+                  {task.assignee && (
+                    <Avatar className="h-6 w-6">
+                      <AvatarFallback className="text-[10px]">
+                        {task.assignee.name?.slice(0, 2) ?? "؟"}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-3 text-xs">
-              <span className={`rounded-full px-3 py-1 font-medium ${statusColors[task.status] ?? "bg-slate-100 text-slate-600"}`}>
-                {task.status}
-              </span>
-              <span className="flex items-center gap-1 text-slate-500">
-                <Clock className="h-3.5 w-3.5" />
-                {task.due}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

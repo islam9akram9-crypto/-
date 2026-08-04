@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import { Link } from "@/lib/i18n/navigation";
 import { getLocale } from "next-intl/server";
 import { Award, Eye, Heart, Rocket, Target, Users } from "lucide-react";
